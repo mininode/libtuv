@@ -50,12 +50,7 @@
 
 #if !defined(__NUTTX__) && !defined(__TIZENRT__)
 
-#if defined(__APPLE__) && !TARGET_OS_IPHONE
-# include <crt_externs.h>
-# define environ (*_NSGetEnviron())
-#else
 extern char **environ;
-#endif
 
 #if defined(__linux__) || defined(__GLIBC__)
 # include <grp.h>

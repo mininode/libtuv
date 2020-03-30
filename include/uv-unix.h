@@ -44,15 +44,14 @@
 
 #include <sys/socket.h>
 #include <netinet/in.h>
-#if !defined(__NUTTX__) && \
-    !defined(__TIZENRT__) /* No netinet/tcp.h */
+#if !defined(__NUTTX__)
 #include <netinet/tcp.h>
 #endif
 #include <arpa/inet.h>
 #include <netdb.h>
 
 #include <termios.h>
-#if !defined(__NUTTX__) && !defined(__TIZENRT__)
+#if !defined(__NUTTX__)
 #include <pwd.h>
 #endif
 
@@ -64,22 +63,8 @@
 
 #if defined(__linux__)
 # include "uv-linux.h"
-#elif defined(_AIX)
-# include "uv-aix.h"
-#elif defined(__sun)
-# include "uv-sunos.h"
-#elif defined(__APPLE__)
-# include "uv-darwin.h"
-#elif defined(__DragonFly__)       || \
-      defined(__FreeBSD__)         || \
-      defined(__FreeBSD_kernel__)  || \
-      defined(__OpenBSD__)         || \
-      defined(__NetBSD__)
-# include "uv-bsd.h"
 #elif defined(__NUTTX__)
 # include "uv-nuttx.h"
-#elif defined(__TIZENRT__)
-# include "uv-tizenrt.h"
 #endif
 
 #ifndef PTHREAD_BARRIER_SERIAL_THREAD
