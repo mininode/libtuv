@@ -67,8 +67,6 @@ void uv__signal_global_once_init(void) {
   uv_once(&uv__signal_global_init_guard, uv__signal_global_init);
 }
 
-
-
 static int uv__signal_lock(void) {
   int r;
   char data;

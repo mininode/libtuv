@@ -178,15 +178,6 @@ void uv__async_send(struct uv__async* wa) {
   len = 1;
   fd = wa->wfd;
 
-#if defined(__linux__)
-  if (fd == -1) {
-    static const uint64_t val = 1;
-    buf = &val;
-    len = sizeof(val);
-    fd = wa->io_watcher.fd;  /* eventfd */
-  }
-#endif
-
   do
     r = write(fd, buf, len);
   while (r == -1 && errno == EINTR);
@@ -272,43 +263,5 @@ void uv__async_stop(uv_loop_t* loop, struct uv__async* wa) {
 
 
 static int uv__async_eventfd() {
-#if defined(__linux__)
-  static int no_eventfd2;
-  static int no_eventfd;
-  int fd;
-
-  if (no_eventfd2)
-    goto skip_eventfd2;
-
-  fd = uv__eventfd2(0, UV__EFD_CLOEXEC | UV__EFD_NONBLOCK);
-  if (fd != -1)
-    return fd;
-
-  if (errno != ENOSYS)
-    return -errno;
-
-  no_eventfd2 = 1;
-
-skip_eventfd2:
-
-  if (no_eventfd)
-    goto skip_eventfd;
-
-  fd = uv__eventfd(0);
-  if (fd != -1) {
-    uv__cloexec(fd, 1);
-    uv__nonblock(fd, 1);
-    return fd;
-  }
-
-  if (errno != ENOSYS)
-    return -errno;
-
-  no_eventfd = 1;
-
-skip_eventfd:
-
-#endif
-
   return -ENOSYS;
 }

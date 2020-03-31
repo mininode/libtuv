@@ -241,16 +241,3 @@ static int statbuf_eq(const uv_stat_t* a, const uv_stat_t* b) {
       && a->st_gen == b->st_gen;
 }
 
-
-#if defined(_WIN32)
-
-#include "win/internal.h"
-#include "win/handle-inl.h"
-
-void uv__fs_poll_endgame(uv_loop_t* loop, uv_fs_poll_t* handle) {
-  assert(handle->flags & UV__HANDLE_CLOSING);
-  assert(!(handle->flags & UV_HANDLE_CLOSED));
-  uv__handle_close(handle);
-}
-
-#endif /* _WIN32 */
