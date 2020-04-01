@@ -18,6 +18,28 @@ AR ?= ar
 RM ?= rm
 CFLAGS ?= -O2 -std=gnu99
 
+CORE_CFLAGS = $(CFLAGS)                         \
+				 -Wall                                  \
+				 -I$(SRCDIR)/include                    \
+				 -I$(SRCDIR)/src                        \
+				 -I$(SRCDIR)/src/unix                   \
+				 -D_POSIX_C_SOURCE=200809L              \
+				 -D_GNU_SOURCE                          \
+				 -D_XOPEN_SOURCE=700                    \
+				 -fomit-frame-pointer                   \
+				 -fstack-protector                      \
+				 -flto                                  \
+				 -fno-asynchronous-unwind-tables        \
+				 -fno-prefetch-loop-arrays              \
+				 -freorder-blocks-algorithm=simple      \
+				 -mno-align-stringops                   \
+				 -fno-align-loops                       \
+				 -fno-align-labels                      \
+				 -fno-align-jumps                       \
+				 -ffunction-sections
+
+
+
 SRCDIR := $(realpath .)
 OBJDIR ?= $(SRCDIR)/obj
 
@@ -36,24 +58,6 @@ objdir:
 	find "$(SRCDIR)" -type d | sed -e "s?$(SRCDIR)?$(OBJDIR)?" | xargs mkdir -p
 	mkdir -p $(OBJDIR)/build
 
-CORE_CFLAGS = $(CFLAGS)                            \
-  					-Wall                                  \
-						-I$(SRCDIR)/include \
-						-I$(SRCDIR)/src \
-						-I$(SRCDIR)/src/unix \
-						-D_POSIX_C_SOURCE=200809L              \
-						-D_XOPEN_SOURCE=700                    \
-						-fomit-frame-pointer                   \
-						-fstack-protector                      \
-						-flto                                  \
-						-fno-asynchronous-unwind-tables        \
-						-fno-prefetch-loop-arrays              \
-						-freorder-blocks-algorithm=simple      \
-						-mno-align-stringops                   \
-						-fno-align-loops                       \
-						-fno-align-labels                      \
-						-fno-align-jumps                       \
-						-ffunction-sections
 
 LIBTUV_SRCS = $(SRCDIR)/src/fs-poll.c      \
 							$(SRCDIR)/src/inet.c         \
@@ -80,7 +84,7 @@ LIBTUV_SRCS += $(SRCDIR)/src/unix/async.c          \
 							 $(SRCDIR)/src/unix/tty.c            \
 							 $(SRCDIR)/src/unix/udp.c            \
 							 $(SRCDIR)/src/unix/proctitle.c      \
-							 $(SRCDIR)/src/unix/linux.c     \
+							 $(SRCDIR)/src/unix/platform.c       \
 							 $(SRCDIR)/src/unix/core.c           \
 							 $(SRCDIR)/src/unix/poll.c
 endif
