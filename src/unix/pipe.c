@@ -29,8 +29,7 @@
 #include <unistd.h>
 #include <stdlib.h>
 
-
-int uv_pipe_init(uv_loop_t* loop, uv_pipe_t* handle, int ipc) {
+int uv_pipe_init(uv_loop_t *loop, uv_pipe_t *handle, int ipc) {
   uv__stream_init(loop, (uv_stream_t*)handle, UV_NAMED_PIPE);
   handle->shutdown_req = NULL;
   handle->connect_req = NULL;
@@ -39,10 +38,9 @@ int uv_pipe_init(uv_loop_t* loop, uv_pipe_t* handle, int ipc) {
   return 0;
 }
 
-
-int uv_pipe_bind(uv_pipe_t* handle, const char* name) {
+int uv_pipe_bind(uv_pipe_t *handle, const char* name) {
   struct sockaddr_un saddr;
-  const char* pipe_fname;
+  const char *pipe_fname;
   int sockfd;
   int err;
 
@@ -93,18 +91,9 @@ err_socket:
   return err;
 }
 
-
-int uv_pipe_listen(uv_pipe_t* handle, int backlog, uv_connection_cb cb) {
+int uv_pipe_listen(uv_pipe_t *handle, int backlog, uv_connection_cb cb) {
   if (uv__stream_fd(handle) == -1)
     return -EINVAL;
-
-#if defined(__MVS__)
-  /* On zOS, backlog=0 has undefined behaviour */
-  if (backlog == 0)
-    backlog = 1;
-  else if (backlog < 0)
-    backlog = SOMAXCONN;
-#endif
 
   if (listen(uv__stream_fd(handle), backlog))
     return -errno;
@@ -115,8 +104,7 @@ int uv_pipe_listen(uv_pipe_t* handle, int backlog, uv_connection_cb cb) {
   return 0;
 }
 
-
-void uv__pipe_close(uv_pipe_t* handle) {
+void uv__pipe_close(uv_pipe_t *handle) {
   if (handle->pipe_fname) {
     /*
      * Unlink the file system entity before closing the file descriptor.
@@ -133,18 +121,12 @@ void uv__pipe_close(uv_pipe_t* handle) {
 }
 
 
-int uv_pipe_open(uv_pipe_t* handle, uv_file fd) {
+int uv_pipe_open(uv_pipe_t *handle, uv_file fd) {
   int err;
 
   err = uv__nonblock(fd, 1);
   if (err)
     return err;
-
-#if defined(__APPLE__)
-  err = uv__stream_try_select((uv_stream_t*) handle, &fd);
-  if (err)
-    return err;
-#endif /* defined(__APPLE__) */
 
   return uv__stream_open((uv_stream_t*)handle,
                          fd,
@@ -152,9 +134,9 @@ int uv_pipe_open(uv_pipe_t* handle, uv_file fd) {
 }
 
 
-void uv_pipe_connect(uv_connect_t* req,
-                    uv_pipe_t* handle,
-                    const char* name,
+void uv_pipe_connect(uv_connect_t *req,
+                    uv_pipe_t *handle,
+                    const char *name,
                     uv_connect_cb cb) {
   struct sockaddr_un saddr;
   int new_sock;
@@ -211,9 +193,7 @@ out:
 
 }
 
-
 typedef int (*uv__peersockfunc)(int, struct sockaddr*, socklen_t*);
-
 
 static int uv__pipe_getsockpeername(const uv_pipe_t* handle,
                                     uv__peersockfunc func,
@@ -255,22 +235,18 @@ static int uv__pipe_getsockpeername(const uv_pipe_t* handle,
   return 0;
 }
 
-
-int uv_pipe_getsockname(const uv_pipe_t* handle, char* buffer, size_t* size) {
+int uv_pipe_getsockname(const uv_pipe_t *handle, char *buffer, size_t *size) {
   return uv__pipe_getsockpeername(handle, getsockname, buffer, size);
 }
 
-
-int uv_pipe_getpeername(const uv_pipe_t* handle, char* buffer, size_t* size) {
+int uv_pipe_getpeername(const uv_pipe_t *handle, char *buffer, size_t *size) {
   return uv__pipe_getsockpeername(handle, getpeername, buffer, size);
 }
 
-
-void uv_pipe_pending_instances(uv_pipe_t* handle, int count) {
+void uv_pipe_pending_instances(uv_pipe_t *handle, int count) {
 }
 
-
-int uv_pipe_pending_count(uv_pipe_t* handle) {
+int uv_pipe_pending_count(uv_pipe_t *handle) {
   uv__stream_queued_fds_t* queued_fds;
 
   if (!handle->ipc)
@@ -286,13 +262,14 @@ int uv_pipe_pending_count(uv_pipe_t* handle) {
   return queued_fds->offset + 1;
 }
 
-
-uv_handle_type uv_pipe_pending_type(uv_pipe_t* handle) {
-  if (!handle->ipc)
+uv_handle_type uv_pipe_pending_type(uv_pipe_t *handle) {
+  if (!handle->ipc) {
     return UV_UNKNOWN_HANDLE;
+  }
 
-  if (handle->accepted_fd == -1)
+  if (handle->accepted_fd == -1) {
     return UV_UNKNOWN_HANDLE;
-  else
+  } else {
     return uv__handle_type(handle->accepted_fd);
+  }
 }

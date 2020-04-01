@@ -49,35 +49,6 @@
 # define inline __inline
 #endif
 
-#if defined(__linux__)
-# include "linux-syscalls.h"
-#endif /* __linux__ */
-
-#if defined(__sun)
-# include <sys/port.h>
-# include <port.h>
-#endif /* __sun */
-
-#if defined(_AIX)
-# define reqevents events
-# define rtnevents revents
-# include <sys/poll.h>
-#else
-# include <poll.h>
-#endif /* _AIX */
-
-#if defined(__APPLE__) && !TARGET_OS_IPHONE
-# include <AvailabilityMacros.h>
-#endif
-
-#if defined(__ANDROID__)
-int uv__pthread_sigmask(int how, const sigset_t* set, sigset_t* oset);
-# ifdef pthread_sigmask
-# undef pthread_sigmask
-# endif
-# define pthread_sigmask(how, set, oldset) uv__pthread_sigmask(how, set, oldset)
-#endif
-
 #define ACCESS_ONCE(type, var)                                                \
   (*(volatile type*) &(var))
 
@@ -195,7 +166,7 @@ int uv__close(int fd);
 int uv__close_nocheckstdio(int fd);
 int uv__socket(int domain, int type, int protocol);
 int uv__dup(int fd);
-#if defined(__NUTTX__) || defined(__TIZENRT__) /* No msghdr in nuttx */
+#if defined(__NUTTX__) /* No msghdr in nuttx */
 struct msghdr;
 #endif
 ssize_t uv__recvmsg(int fd, struct msghdr *msg, int flags);
@@ -227,9 +198,6 @@ void uv__stream_init(uv_loop_t* loop, uv_stream_t* stream,
     uv_handle_type type);
 int uv__stream_open(uv_stream_t*, int fd, int flags);
 void uv__stream_destroy(uv_stream_t* stream);
-#if defined(__APPLE__)
-int uv__stream_try_select(uv_stream_t* stream, int* fd);
-#endif /* defined(__APPLE__) */
 void uv__server_io(uv_loop_t* loop, uv__io_t* w, unsigned int events);
 int uv__accept(int sockfd);
 int uv__dup2_cloexec(int oldfd, int newfd);
@@ -278,12 +246,7 @@ FILE* uv__open_file(const char* path);
 int uv__getpwuid_r(uv_passwd_t* pwd);
 
 
-#if defined(__APPLE__)
-int uv___stream_fd(const uv_stream_t* handle);
-#define uv__stream_fd(handle) (uv___stream_fd((const uv_stream_t*) (handle)))
-#else
 #define uv__stream_fd(handle) ((handle)->io_watcher.fd)
-#endif /* defined(__APPLE__) */
 
 #ifdef UV__O_NONBLOCK
 # define UV__F_NONBLOCK UV__O_NONBLOCK
@@ -293,32 +256,6 @@ int uv___stream_fd(const uv_stream_t* handle);
 
 int uv__make_socketpair(int fds[2], int flags);
 int uv__make_pipe(int fds[2], int flags);
-
-#if defined(__APPLE__)
-
-int uv__fsevents_init(uv_fs_event_t* handle);
-int uv__fsevents_close(uv_fs_event_t* handle);
-void uv__fsevents_loop_delete(uv_loop_t* loop);
-
-/* OSX < 10.7 has no file events, polyfill them */
-#ifndef MAC_OS_X_VERSION_10_7
-
-static const int kFSEventStreamCreateFlagFileEvents = 0x00000010;
-static const int kFSEventStreamEventFlagItemCreated = 0x00000100;
-static const int kFSEventStreamEventFlagItemRemoved = 0x00000200;
-static const int kFSEventStreamEventFlagItemInodeMetaMod = 0x00000400;
-static const int kFSEventStreamEventFlagItemRenamed = 0x00000800;
-static const int kFSEventStreamEventFlagItemModified = 0x00001000;
-static const int kFSEventStreamEventFlagItemFinderInfoMod = 0x00002000;
-static const int kFSEventStreamEventFlagItemChangeOwner = 0x00004000;
-static const int kFSEventStreamEventFlagItemXattrMod = 0x00008000;
-static const int kFSEventStreamEventFlagItemIsFile = 0x00010000;
-static const int kFSEventStreamEventFlagItemIsDir = 0x00020000;
-static const int kFSEventStreamEventFlagItemIsSymlink = 0x00040000;
-
-#endif /* __ENVIRONMENT_MAC_OS_X_VERSION_MIN_REQUIRED__ < 1070 */
-
-#endif /* defined(__APPLE__) */
 
 UV_UNUSED(static void uv__req_init(uv_loop_t* loop,
                                    uv_req_t* req,

@@ -36,28 +36,28 @@
 
 #include <assert.h>
 #include <string.h>
+#include <stdbool.h>
 
 #include <uv.h>
 #include "unix/internal.h"
 
 //-----------------------------------------------------------------------------
 // loop
-int uv__platform_loop_init(uv_loop_t* loop) {
+int uv__platform_loop_init(uv_loop_t *loop) {
   loop->npollfds = 0;
   return 0;
 }
 
-void uv__platform_loop_delete(uv_loop_t* loop) {
+void uv__platform_loop_delete(uv_loop_t *loop) {
   loop->npollfds = 0;
 }
 
-
 //-----------------------------------------------------------------------------
 
-void uv__platform_invalidate_fd(uv_loop_t* loop, int fd) {
+void uv__platform_invalidate_fd(uv_loop_t *loop, int fd) {
   int i;
   int nfd = loop->npollfds;
-  for (i = 0; i < nfd; ++i) {
+  for (i = 0; i < nfd; i++) {
     struct pollfd* pfd = &loop->pollfds[i];
     if (fd == pfd->fd) {
       pfd->fd = -1;
@@ -72,16 +72,16 @@ void uv__platform_invalidate_fd(uv_loop_t* loop, int fd) {
 
 //-----------------------------------------------------------------------------
 
-int getpeername(int sockfd, struct sockaddr* addr, socklen_t* addrlen) {
+int getpeername(int sockfd, struct sockaddr *addr, socklen_t *addrlen) {
   return 0;
 }
 
-ssize_t readv(int fd, const struct iovec* iiovec, int count) {
+ssize_t readv(int fd, const struct iovec *iiovec, int count) {
   ssize_t result = 0;
   ssize_t total = 0;
   int idx;
 
-  for (idx = 0; idx < count; ++idx) {
+  for (idx = 0; idx < count; idx++) {
     result = read(fd, iiovec[idx].iov_base, iiovec[idx].iov_len);
     if (result < 0) {
       return result;
@@ -93,12 +93,12 @@ ssize_t readv(int fd, const struct iovec* iiovec, int count) {
 }
 
 
-ssize_t writev(int fd, const struct iovec* iiovec, int count) {
+ssize_t writev(int fd, const struct iovec *iiovec, int count) {
   ssize_t result = 0;
   ssize_t total = 0;
   int idx;
 
-  for (idx = 0; idx < count; ++idx) {
+  for (idx = 0; idx < count; idx++) {
     result = write(fd, iiovec[idx].iov_base, iiovec[idx].iov_len);
     if (result < 0) {
       return result;
@@ -109,7 +109,6 @@ ssize_t writev(int fd, const struct iovec* iiovec, int count) {
   return total;
 }
 
-// From nuttx_clock.c
 uint64_t uv__hrtime(uv_clocktype_t type) {
   struct timespec ts;
   clock_gettime(CLOCK_MONOTONIC, &ts);
@@ -118,13 +117,12 @@ uint64_t uv__hrtime(uv_clocktype_t type) {
   return ret;
 }
 
-// From nuttx_io.c
-static void uv__add_pollfd(uv_loop_t* loop, struct pollfd* pe) {
+static void uv__add_pollfd(uv_loop_t *loop, struct pollfd *pe) {
   int i;
   bool exist = false;
   int free_idx = -1;
   for (i = 0; i < loop->npollfds; ++i) {
-    struct pollfd* cur = &loop->pollfds[i];
+    struct pollfd *cur = &loop->pollfds[i];
     if (cur->fd == pe->fd) {
       cur->events = pe->events;
       exist = true;
@@ -137,41 +135,37 @@ static void uv__add_pollfd(uv_loop_t* loop, struct pollfd* pe) {
   if (!exist) {
     if (free_idx == -1) {
       free_idx = loop->npollfds++;
-      if (free_idx >= TUV_POLL_EVENTS_SIZE)
-      {
+      if (free_idx >= TUV_POLL_EVENTS_SIZE) {
         TDLOG("uv__add_pollfd abort, because loop->npollfds (%d) reached maximum size", free_idx);
         ABORT();
       }
     }
-    struct pollfd* cur = &loop->pollfds[free_idx];
+    struct pollfd *cur = &loop->pollfds[free_idx];
 
     cur->fd = pe->fd;
     cur->events = pe->events;
     cur->revents = 0;
-    cur->sem = 0;
-    cur->priv = 0;
   }
 }
 
 
-static void uv__rem_pollfd(uv_loop_t* loop, struct pollfd* pe) {
+static void uv__rem_pollfd(uv_loop_t *loop, struct pollfd *pe) {
   int i = 0;
   while (i < loop->npollfds) {
     struct pollfd* cur = &loop->pollfds[i];
     if (cur->fd == pe->fd) {
       *cur = loop->pollfds[--loop->npollfds];
     } else {
-      ++i;
+      i++;
     }
   }
 }
 
-
-void uv__io_poll(uv_loop_t* loop, int timeout) {
+void uv__io_poll(uv_loop_t *loop, int timeout) {
   struct pollfd pfd;
-  struct pollfd* pe;
-  QUEUE* q;
-  uv__io_t* w;
+  struct pollfd *pe;
+  QUEUE *q;
+  uv__io_t *w;
   uint64_t base;
   uint64_t diff;
   int nevents;
@@ -216,11 +210,17 @@ void uv__io_poll(uv_loop_t* loop, int timeout) {
     }
 
     if (nfd == -1) {
+#ifdef __NUTTX__
       int err = get_errno();
       if (err == EAGAIN) {
         set_errno(0);
       }
-      else if (err != EINTR) {
+#else 
+      if (errno == EAGAIN) {
+        errno = 0;
+      }
+#endif
+      else if (errno != EINTR) {
         // poll of which the watchers is null should be removed
         TDLOG("uv__io_poll abort for errno(%d)", err);
         goto handle_poll;
@@ -237,24 +237,24 @@ void uv__io_poll(uv_loop_t* loop, int timeout) {
 handle_poll:
     nevents = 0;
 
-    for (i = 0; i < loop->npollfds; ++i) {
+    for (i = 0; i < loop->npollfds; i++) {
       pe = &loop->pollfds[i];
       w = loop->watchers[pe->fd];
 
       if (w == NULL) {
         uv__rem_pollfd(loop, pe);
-        --i;
+        i--;
         continue;
       }
 
       if (pe->fd >= 0 && (pe->revents & (POLLIN | POLLOUT | POLLHUP))) {    
         w->cb(loop, w, pe->revents);
-        ++nevents;
+        nevents++;
       }
     }
 
     if (nevents != 0) {
-      if (--count != 0) {
+      if (count-- != 0) {
         timeout = 0;
         continue;
       }

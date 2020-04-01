@@ -115,11 +115,9 @@ void uv_close(uv_handle_t* handle, uv_close_cb close_cb) {
   handle->close_cb = close_cb;
 
   switch (handle->type) {
-#ifdef TUV_FEATURE_PIPE
   case UV_NAMED_PIPE:
     uv__pipe_close((uv_pipe_t*)handle);
     break;
-#endif
 
   case UV_TTY:
     uv__stream_close((uv_stream_t*)handle);
@@ -410,29 +408,6 @@ int uv__accept(int sockfd) {
   assert(sockfd >= 0);
 
   while (1) {
-#if defined(__linux__) || (defined(__FreeBSD__) && __FreeBSD__ >= 10)
-    static int no_accept4;
-
-    if (no_accept4)
-      goto skip;
-
-    peerfd = uv__accept4(sockfd,
-                         NULL,
-                         NULL,
-                         UV__SOCK_NONBLOCK|UV__SOCK_CLOEXEC);
-    if (peerfd != -1)
-      return peerfd;
-
-    if (errno == EINTR)
-      continue;
-
-    if (errno != ENOSYS)
-      return -errno;
-
-    no_accept4 = 1;
-skip:
-#endif
-
     peerfd = accept(sockfd, NULL, NULL);
     if (peerfd == -1) {
       if (errno == EINTR)
@@ -474,19 +449,14 @@ int uv__close_nocheckstdio(int fd) {
 
 
 int uv__close(int fd) {
-#if !defined(__NUTTX__) && !defined(__TIZENRT__) /* No STDERR_FILENO in nuttx */
+#if !defined(__NUTTX__) /* No STDERR_FILENO in nuttx */
   assert(fd > STDERR_FILENO);  /* Catch stdio close bugs. */
 #endif
   return uv__close_nocheckstdio(fd);
 }
 
 
-#if defined(_AIX) || \
-    defined(__APPLE__) || \
-    defined(__DragonFly__) || \
-    defined(__FreeBSD__) || \
-    defined(__FreeBSD_kernel__) || \
-    defined(__linux__)
+#if defined(__linux__)
 int uv__nonblock_ioctl(int fd, int set) {
   int r;
 

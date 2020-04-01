@@ -154,17 +154,17 @@ int uv_timer_again(uv_timer_t* handle) {
 }
 
 
-void uv_timer_set_repeat(uv_timer_t* handle, uint64_t repeat) {
+void uv_timer_set_repeat(uv_timer_t *handle, uint64_t repeat) {
   handle->repeat = repeat;
 }
 
 
-uint64_t uv_timer_get_repeat(const uv_timer_t* handle) {
+uint64_t uv_timer_get_repeat(const uv_timer_t *handle) {
   return handle->repeat;
 }
 
 
-int uv__next_timeout(const uv_loop_t* loop) {
+int uv__next_timeout(const uv_loop_t *loop) {
   const struct heap_node* heap_node;
   const uv_timer_t* handle;
   uint64_t diff;
@@ -185,9 +185,9 @@ int uv__next_timeout(const uv_loop_t* loop) {
 }
 
 
-void uv__run_timers(uv_loop_t* loop) {
-  struct heap_node* heap_node;
-  uv_timer_t* handle;
+void uv__run_timers(uv_loop_t *loop) {
+  struct heap_node *heap_node;
+  uv_timer_t *handle;
 
   for (;;) {
     heap_node = heap_min((struct heap*) &loop->timer_heap);
@@ -205,6 +205,6 @@ void uv__run_timers(uv_loop_t* loop) {
 }
 
 
-void uv__timer_close(uv_timer_t* handle) {
+void uv__timer_close(uv_timer_t *handle) {
   uv_timer_stop(handle);
 }
